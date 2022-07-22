@@ -1,1 +1,1 @@
-# imager_bot_tg
+# Telegramm bot based @screenshot_bot on Python for an interview.
