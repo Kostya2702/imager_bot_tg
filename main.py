@@ -1,7 +1,8 @@
+from datetime import datetime
 import logging
 import re
 import os
-from typing import Text
+import requests
 
 from aiogram import Bot, Dispatcher, executor, types # URLInputFile
 from selenium import webdriver
@@ -38,13 +39,13 @@ async def make_screen(url):
         driver.quit()
 
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message_handler(commands=['start', 'help'], content_types=types.ContentTypes.ANY)
 async def send_welcome(message: types.Message):
-    
+
     await message.reply(f"Hi, {message.from_user.first_name}!\nI'm Imager Telegram bot!")
 
 
-@dp.message_handler(content_types=types.ContentType.ANY)
+@dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_screen(message: types.Message):
 
     extractorURL = URLExtract()
@@ -54,10 +55,11 @@ async def send_screen(message: types.Message):
     if len(new_url) == 0:
         new_url.append(f"https://{url}")
 
+    headers = requests.get(new_url[0])
+    title_page = re.findall(r'<title>(.*?)</title>', headers.text)[0]
+
     chat_id = message.chat.id
-
-    print(new_url[0])
-
+    
     if new_url:
         await message.reply('Bee monster is activated!\n🪄 Ваш запрос выполняется')
         await make_screen(new_url[0])
