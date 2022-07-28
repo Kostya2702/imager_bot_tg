@@ -1,8 +1,8 @@
-from datetime import datetime
-import imp
+from datetime import date, datetime
 import logging
 import re
 import os
+from urllib.parse import urlparse
 
 from requests import get
 from aiogram import Bot, Dispatcher, executor, types
@@ -19,6 +19,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('database')
 
 # Initialize bot and dispatcher
 bot = Bot(token=TOKEN)
@@ -26,7 +27,7 @@ dp = Dispatcher(bot)
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
-async def make_screen(url):
+async def make_screen(url, date_request, user_id, domen):
 
     # Initialize Chrome webrdiver
     options = webdriver.ChromeOptions()
@@ -36,13 +37,11 @@ async def make_screen(url):
     driver.get(url)
 
     # Setting up display size
-    required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
-    required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
-    driver.set_window_size(required_width, required_height)
+    driver.set_window_size(1024, 1460)
     driver.maximize_window()
 
     # Makes screenshot
-    driver.get_screenshot_as_file('web_screenshot.png')
+    driver.get_screenshot_as_file(f"{date_request}_{user_id}_{domen}.png")
 
     # Ending driver work
     driver.quit()
@@ -52,12 +51,14 @@ async def make_screen(url):
 @dp.message_handler(commands=['start', 'help'], content_types=types.ContentTypes.ANY)
 async def send_welcome(message: types.Message):
 
+    print(logging.getLogger('database'), 'smth from db')
     # Answer on message about bot
-    await message.reply(f"Hi, {message.from_user.first_name}!\nI'm Imager Telegram bot!")
+    with open(f"{ROOT_DIR}/greetings.txt", 'r', encoding='UTF-8') as greeting:
+        await message.answer(greeting.read())
 
 
 # Photo creation, URL extraction and request time
-@dp.message_handler(content_types=types.ContentTypes.TEXT)
+@dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_screen(message: types.Message):
 
     # Getting url from message
@@ -77,32 +78,46 @@ async def send_screen(message: types.Message):
 
     # Getting page title from url
     headers = get(full_url[0])
-    page_title = re.findall(r'<title>(.*?)</title>', headers.text)[0]
-    
+    page_title = re.findall(r'<title>[\n\t\s]*(.*?)[\n\t\s]*<\/title>', headers.text)[0]
+    page_domain = urlparse(full_url[0]).netloc
+
     # Makes photo and add job for scheluder for edit_message handler
     if full_url:
-
-        message = await message.reply('🐝 Bee monster is activated!\n🪄 Ваш запрос выполняется')
+        
+        message = await message.reply('🪄 Ваш запрос выполняется')
         
         starting_capture_screen = datetime.now().second
-        await make_screen(full_url[0])
+        await make_screen(full_url[0],
+                          date.today(),
+                          message.from_user.id, page_domain)
+
         time_request = datetime.now().second - starting_capture_screen
 
         scheduler.add_job(edit_message, 
                           "date",
-                          run_date=datetime.now(), 
-                          kwargs={"message": message, "page_title": page_title, "time_request": time_request})
+                          run_date=datetime.now(),
+                          kwargs={"message": message,
+                                  "page_title": page_title,
+                                  "time_request": time_request,
+                                  "page_domain": page_domain})
                           
 
-async def edit_message(message: types.Message, page_title, time_request):
+async def edit_message(message: types.Message, page_title, time_request, page_domain):
 
-    # Getting chat id
-    chat_id = message.chat.id
+    plural_name = ''
 
+    if str(time_request)[-1] == '1':
+        plural_name = 'секунда'
+    if str(time_request)[-1] in ['2', '3', '4']:
+        plural_name = 'секунды'
+    if str(time_request)[-1] not in ['1', '2', '3', '4']:
+        plural_name = 'секунд'
+        
     # Sending edited text with all necessary parameters
-    # with open(f"{ROOT_DIR}/web_screenshot.png", 'rb') as forw_photo:
-    reply_photo = await bot.send_photo(chat_id, open(f"{ROOT_DIR}/web_screenshot.png", 'rb'))
-    await message.edit_media(f"{page_title}\n{time_request}\n{reply_photo}")
+    with open(f"{ROOT_DIR}/{date.today()}_{message.from_user.id}_{page_domain}.png", 'rb') as forw_photo:
+        await message.delete()
+        await message.answer_photo(photo=forw_photo, 
+                                   caption=f"{page_title}\n\nВремя обработки: {time_request} {plural_name}")
 
 
 if __name__ == '__main__':
