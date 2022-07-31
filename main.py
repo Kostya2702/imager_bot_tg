@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from requests import get
 from aiogram import Bot, Dispatcher, executor, types
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from selenium import webdriver
 from urlextract import URLExtract
 from dotenv import load_dotenv
@@ -15,7 +16,9 @@ load_dotenv()
 
 # Bot parameters
 TOKEN = os.getenv('TOKEN')
+I18N_DOMAIN = 'imager_tg_bot'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOCALES_DIR = f"{ROOT_DIR}/locales"
 
 # Configure logging
 
@@ -46,10 +49,17 @@ logger.addHandler(d_handler)
 logger.addHandler(c_handler)
 
 # Initialize bot and dispatcher
-bot = Bot(token=TOKEN)
+bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
 dp = Dispatcher(bot)
 scheduler = AsyncIOScheduler()
 scheduler.start()
+
+# Setup i18n middleware
+i18n = I18nMiddleware(I18N_DOMAIN, LOCALES_DIR)
+dp.middleware.setup(i18n)
+
+# Alias for gettext method
+_ = i18n.gettext
 
 async def make_screen(url, date_request, user_id, domen):
 
@@ -79,7 +89,8 @@ async def make_screen(url, date_request, user_id, domen):
 async def set_default_commands():
     await bot.set_my_commands(
         [
-            types.BotCommand('start', 'Starting bot')
+            # types.BotCommand('start', 'Starting bot')
+            types.BotCommand('start', _("Starting bot"))
         ]
     )
 
@@ -109,7 +120,7 @@ async def send_screen(message: types.Message):
         full_url = re.findall('^http.*', url[0])
         logger.info('Finding request method to url')
     else:
-        await message.answer('Сообщение должно содержать URL сайта')
+        await message.answer(_("Message must contain website URL"))
         logger.warning("Can't find URL in request")
         return
         
@@ -129,7 +140,7 @@ async def send_screen(message: types.Message):
     # Makes photo and add job for scheluder for edit_message handler
     if full_url:
         
-        message = await message.reply('🪄 Ваш запрос выполняется')
+        message = await message.reply(_("🪄 Your request is being processed"))
         logger.info('Sending dummy message')
         
         starting_capture_screen = datetime.now()
@@ -160,11 +171,11 @@ async def edit_message(message: types.Message, page_title, time_request, page_do
     plural_name = ''
 
     if str(time_request)[-1] == '1':
-        plural_name = 'секунда'
+        plural_name = _("second")
     if str(time_request)[-1] in ['2', '3', '4']:
-        plural_name = 'секунды'
+        plural_name = _("seconds")
     if str(time_request)[-1] not in ['1', '2', '3', '4']:
-        plural_name = 'секунд'
+        plural_name = _("seconds")
         
     # Sending edited text with all necessary parameters
     logger.info('Running the scheduler')
@@ -172,8 +183,11 @@ async def edit_message(message: types.Message, page_title, time_request, page_do
         with open(f"{ROOT_DIR}/{date.today()}_{message.from_user.id}_{page_domain}.png", 'rb') as forw_photo:
             await message.delete()
             logger.info('Editing dummy message and sending answer with photo and captions')
-            await message.answer_photo(photo=forw_photo, 
-                                    caption=f"{page_title}\n\nВремя обработки: {time_request} {plural_name}")
+            await message.answer_photo(photo=forw_photo,
+                                    caption=_('{page_title}\n\nProcessing time: {time_request} {plural_name}').format(page_title=page_title,
+                                                                                                                      time_request=time_request,
+                                                                                                                      plural_name=plural_name))
+                                    # caption=f"{page_title}\n\nВремя обработки: {time_request} {plural_name}")
     except FileNotFoundError:
         logger.exception('FileNotFoundError')
 
