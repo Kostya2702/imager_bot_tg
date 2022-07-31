@@ -22,7 +22,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 def filter_python(record: logging.LogRecord) -> bool:
     return record.getMessage().find('aiogram') != -1
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # create logger
 logger = logging.getLogger('debug information')
@@ -55,7 +55,9 @@ async def make_screen(url, date_request, user_id, domen):
 
     # Initialize Chrome webrdiver
     options = webdriver.ChromeOptions()
-    options.headless = True
+    options.add_argument('--no-sandbox')
+    options.add_argument('--headless')
+    options.add_argument('--disable-dev-shm-usage')
     driver = webdriver.Chrome(options=options)
 
     try:
@@ -100,6 +102,7 @@ async def send_screen(message: types.Message):
         logger.info('Finding request method to url')
     else:
         await message.answer('Сообщение должно содержать URL сайта')
+        logger.warning("Can't find URL in request")
         return
         
     # Transfromation url to https request
@@ -121,7 +124,7 @@ async def send_screen(message: types.Message):
         message = await message.reply('🪄 Ваш запрос выполняется')
         logger.info('Sending dummy message')
         
-        starting_capture_screen = datetime.now().second
+        starting_capture_screen = datetime.now()
         logger.info('Starting a screenshot')
         
         try:
@@ -132,7 +135,7 @@ async def send_screen(message: types.Message):
             logger.exception('Exception occurred')
 
         logger.info('Ending a screenshot')
-        time_request = datetime.now().second - starting_capture_screen
+        time_request = datetime.now() - starting_capture_screen
 
         logger.info('Creating a job for the scheduler')
         scheduler.add_job(edit_message, 
@@ -140,7 +143,7 @@ async def send_screen(message: types.Message):
                           run_date=datetime.now(),
                           kwargs={"message": message,
                                   "page_title": page_title,
-                                  "time_request": time_request,
+                                  "time_request": time_request.seconds,
                                   "page_domain": page_domain})
                           
 
@@ -157,11 +160,14 @@ async def edit_message(message: types.Message, page_title, time_request, page_do
         
     # Sending edited text with all necessary parameters
     logger.info('Running the scheduler')
-    with open(f"{ROOT_DIR}/{date.today()}_{message.from_user.id}_{page_domain}.png", 'rb') as forw_photo:
-        await message.delete()
-        logger.info('Editing dummy message and sending answer with photo and captions')
-        await message.answer_photo(photo=forw_photo, 
-                                   caption=f"{page_title}\n\nВремя обработки: {time_request} {plural_name}")
+    try:
+        with open(f"{ROOT_DIR}/{date.today()}_{message.from_user.id}_{page_domain}.png", 'rb') as forw_photo:
+            await message.delete()
+            logger.info('Editing dummy message and sending answer with photo and captions')
+            await message.answer_photo(photo=forw_photo, 
+                                    caption=f"{page_title}\n\nВремя обработки: {time_request} {plural_name}")
+    except FileNotFoundError:
+        logger.exception('FileNotFoundError')
 
 
 if __name__ == '__main__':
