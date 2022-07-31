@@ -76,8 +76,16 @@ async def make_screen(url, date_request, user_id, domen):
     driver.quit()
 
 
+async def set_default_commands():
+    await bot.set_my_commands(
+        [
+            types.BotCommand('start', 'Starting bot')
+        ]
+    )
+
+
 # Bot functionality description function
-@dp.message_handler(commands=['start', 'help'], content_types=types.ContentTypes.ANY)
+@dp.message_handler(commands=['start'], content_types=types.ContentTypes.ANY)
 async def send_welcome(message: types.Message):
 
     # Answer on message about bot
