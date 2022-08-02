@@ -1,52 +1,27 @@
-from datetime import date, datetime
-import logging
 import re
 import os
-from urllib.parse import urlparse
+import handlers.inlineButton as button
 
+from urllib.parse import urlparse
 from requests import get
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.contrib.middlewares.i18n import I18nMiddleware
-from selenium import webdriver
+from datetime import date, datetime
 from urlextract import URLExtract
+from handlers.logger import logger
+from handlers.sending_screen import make_screen
 from dotenv import load_dotenv
 
-load_dotenv()
 
 # Bot parameters
+load_dotenv()
 TOKEN = os.getenv('TOKEN')
 I18N_DOMAIN = 'imager_tg_bot'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCALES_DIR = f"{ROOT_DIR}/locales"
-
-# Configure logging
-
-def filter_python(record: logging.LogRecord) -> bool:
-    return record.getMessage().find('aiogram') != -1
-
-logging.basicConfig(level=logging.INFO)
-
-# create logger
-logger = logging.getLogger('debug information')
-logger.setLevel(logging.DEBUG)
-
-# create file handler which logs even debug messages
-d_handler = logging.FileHandler(filename='debug_logs.log')
-d_handler.setLevel(logging.DEBUG)
-
-# create console handler with a higher log level
-c_handler = logging.StreamHandler()
-c_handler.setLevel(logging.ERROR)
-
-# create formatter and add it to the handlers
-formatter = logging.Formatter('[%(asctime)s: %(name)s - %(levelname)s] %(message)s')
-d_handler.setFormatter(formatter)
-c_handler.setFormatter(formatter)
-
-# add the handlers to the logger
-logger.addHandler(d_handler)
-logger.addHandler(c_handler)
 
 # Initialize bot and dispatcher
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
@@ -61,55 +36,53 @@ dp.middleware.setup(i18n)
 # Alias for gettext method
 _ = i18n.gettext
 
-async def make_screen(url, date_request, user_id, domen):
 
-    # Initialize Chrome webrdiver
-    options = webdriver.ChromeOptions()
-    options.add_argument('--no-sandbox')
-    options.add_argument('--headless')
-    options.add_argument('--disable-dev-shm-usage')
-    driver = webdriver.Chrome(options=options)
+# States
+class Form(StatesGroup):
 
-    try:
-        driver.get(url)
-    except Exception:
-        logger.exception('InvalidArgumentException')
-
-    # Setting up display size
-    driver.set_window_size(1024, 1460)
-    driver.maximize_window()
-
-    # Makes screenshot
-    driver.get_screenshot_as_file(f"{date_request}_{user_id}_{domen}.png")
-
-    # Ending driver work
-    driver.quit()
+    # State for choose language
+    language = State()
 
 
 async def set_default_commands():
+
     await bot.set_my_commands(
         [
-            # types.BotCommand('start', 'Starting bot')
+            types.BotCommand('starts', 'Startings bot'),
             types.BotCommand('start', _("Starting bot"))
         ]
     )
 
 
+# async def await_set(message: types.Message):
+
+#     await message.answer('This bot allow you to mage screenshot of any websites what you send him in the message')
+#     await Form.language.set()
+
+
 # Bot functionality description function
-@dp.message_handler(commands=['start'], content_types=types.ContentTypes.ANY)
+
+@dp.message_handler(commands=['start'], content_types=types.ContentTypes.ANY, state='*')
 async def send_welcome(message: types.Message):
+
+    await Form.language.set()
 
     # Answer on message about bot
     with open(f"{ROOT_DIR}/greetings.txt", 'r', encoding='UTF-8') as greeting:
         await message.answer(greeting.read())
+        # await message.answer('f', reply_markup=button.greet_kb)
         logger.info(f"Sending gretting for user {message.from_user.first_name}")
 
 
+
 # Photo creation, URL extraction and request time
-@dp.message_handler(content_types=types.ContentTypes.ANY)
-async def send_screen(message: types.Message):
+@dp.message_handler(content_types=types.ContentTypes.ANY, state=Form.language)
+async def send_screen(message: types.Message, state: FSMContext):
 
     logger.info(f"Starting work with user: {message.from_user.first_name}")
+
+    await state.update_data(lang='ru')
+    print(await state.get_data()['lang'])
 
     # Getting url from message
     extractorURL = URLExtract()
@@ -164,6 +137,9 @@ async def send_screen(message: types.Message):
                                   "page_title": page_title,
                                   "time_request": time_request.seconds,
                                   "page_domain": page_domain})
+
+    await Form.next()
+    
                           
 
 async def edit_message(message: types.Message, page_title, time_request, page_domain):
