@@ -40,9 +40,3 @@ Restart the virtual machine or log out on Linux/Mac/Windows and log in again.
 ```
 docker build -t imager . && docker run --restart unless-stopped --cpus 2 -d imager
 ```
-
-
-how mach users
-name
-where from (territory)
-what languge

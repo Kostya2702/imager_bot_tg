@@ -1,0 +1,10 @@
+services:
+  postgres:
+    image: postgres:13.3
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${PG_DB}"
+      POSTGRES_USER: "${PG_USER}"
+      POSTGRES_PASSWORD: "${PG_PASS}"
+    ports:
+      - "5433:5433"

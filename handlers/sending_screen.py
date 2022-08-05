@@ -2,9 +2,6 @@ from handlers.logger import logger
 from selenium import webdriver
 
 
-# logger = logging.getLogger(__name__)
-
-
 async def make_screen(url, date_request, user_id, domen):
 
     # Initialize Chrome webrdiver

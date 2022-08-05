@@ -1,6 +1,7 @@
+import handlers.inlineButton as button
+import handlers.Stats
 import re
 import os
-import handlers.inlineButton as button
 
 from urllib.parse import urlparse
 from requests import get
@@ -13,19 +14,16 @@ from datetime import date, datetime
 from urlextract import URLExtract
 from handlers.logger import logger
 from handlers.sending_screen import make_screen
-from dotenv import load_dotenv
+from handlers.load_all import db, bot, dp
 
 
 # Bot parameters
-load_dotenv()
-TOKEN = os.getenv('TOKEN')
+db = handlers.Stats.Stats()
 I18N_DOMAIN = 'imager_tg_bot'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCALES_DIR = f"{ROOT_DIR}/locales"
 
 # Initialize bot and dispatcher
-bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
-dp = Dispatcher(bot)
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
@@ -62,10 +60,14 @@ async def set_default_commands():
 
 # Bot functionality description function
 
-@dp.message_handler(commands=['start'], content_types=types.ContentTypes.ANY, state='*')
+@dp.message_handler(commands=['start'], content_types=['text'], state='*')
 async def send_welcome(message: types.Message):
 
-    await Form.language.set()
+    # await Form.language.set()
+
+    # Register user
+    user = message.from_user
+    await db.record_etries(user)
 
     # Answer on message about bot
     with open(f"{ROOT_DIR}/greetings.txt", 'r', encoding='UTF-8') as greeting:
@@ -74,15 +76,21 @@ async def send_welcome(message: types.Message):
         logger.info(f"Sending gretting for user {message.from_user.first_name}")
 
 
+@dp.message_handler(commands=['statistic'])
+async def get_stats(message: types.Message):
+    count_users = await db.count_users()
+    await message.answer(count_users)
+
 
 # Photo creation, URL extraction and request time
-@dp.message_handler(content_types=types.ContentTypes.ANY, state=Form.language)
-async def send_screen(message: types.Message, state: FSMContext):
+@dp.message_handler(content_types=types.ContentTypes.ANY)
+async def send_screen(message: types.Message):
 
     logger.info(f"Starting work with user: {message.from_user.first_name}")
 
-    await state.update_data(lang='ru')
-    print(await state.get_data()['lang'])
+    # await state.update_data(lang='ru')
+    # await Form.next()
+    # print(await state.get_data()['lang'])
 
     # Getting url from message
     extractorURL = URLExtract()
@@ -104,7 +112,8 @@ async def send_screen(message: types.Message, state: FSMContext):
 
     # Getting page title from url
     headers = get(full_url[0])
-    page_title = re.findall(r'<title>[\n\t\s]*(.*?)[\n\t\s]*<\/title>', headers.text)[0]
+    page_title = re.findall(r'<title>[\n\t\s]*(.*?)[\n\t\s]*<\/title>', 
+                            headers.text)[0]
     logger.info('Find page title is complete')
 
     # Getting site domain
@@ -138,11 +147,13 @@ async def send_screen(message: types.Message, state: FSMContext):
                                   "time_request": time_request.seconds,
                                   "page_domain": page_domain})
 
-    await Form.next()
     
                           
 
-async def edit_message(message: types.Message, page_title, time_request, page_domain):
+async def edit_message(message: types.Message, 
+                       page_title, 
+                       time_request, 
+                       page_domain):
 
     plural_name = ''
 
@@ -152,18 +163,26 @@ async def edit_message(message: types.Message, page_title, time_request, page_do
         plural_name = _("seconds")
     if str(time_request)[-1] not in ['1', '2', '3', '4']:
         plural_name = _("seconds")
+
+    # Getting user id
+
+    user_id = message.from_user.id
         
     # Sending edited text with all necessary parameters
     logger.info('Running the scheduler')
     try:
-        with open(f"{ROOT_DIR}/{date.today()}_{message.from_user.id}_{page_domain}.png", 'rb') as forw_photo:
+        with open(f"{ROOT_DIR}/{date.today()}_\
+                    {user_id}_\
+                    {page_domain}.png", 'rb') as forw_photo:
+
             await message.delete()
             logger.info('Editing dummy message and sending answer with photo and captions')
-            await message.answer_photo(photo=forw_photo,
-                                    caption=_('{page_title}\n\nProcessing time: {time_request} {plural_name}').format(page_title=page_title,
-                                                                                                                      time_request=time_request,
-                                                                                                                      plural_name=plural_name))
-                                    # caption=f"{page_title}\n\nВремя обработки: {time_request} {plural_name}")
+            await message.answer_photo(forw_photo,
+                                       _('{page_title}\n\nProcessing time: \
+                                        {time_request} \
+                                        {plural_name}').format(page_title,
+                                                               time_request,
+                                                               plural_name))
     except FileNotFoundError:
         logger.exception('FileNotFoundError')
 
