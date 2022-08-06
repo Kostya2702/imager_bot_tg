@@ -1,7 +1,7 @@
 from asyncpg import Connection, Record
 from asyncpg.exceptions import UniqueViolationError
-from load_all import db
-from logger import logger
+from handlers.logger import logger
+from handlers.load_all import db
 
 
 class Stats:

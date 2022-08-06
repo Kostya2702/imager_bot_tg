@@ -2,3 +2,5 @@
 debug_logs.log
 */__pycache__
 .vscode/
+venv/
+handlers/__pycache__/

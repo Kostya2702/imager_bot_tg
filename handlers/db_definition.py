@@ -1,8 +1,8 @@
 import asyncio
 import asyncpg
 
-from logger import logger
-from config import PG_PASS, PG_USER, PG_HOST, PG_DB
+from handlers.logger import logger
+from handlers.config import PG_PASS, PG_USER, PG_HOST, PG_DB
 
 
 async def create_db():

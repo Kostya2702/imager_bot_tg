@@ -2,7 +2,6 @@ import os
 
 from dotenv import load_dotenv
 
-
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 PG_DB = os.getenv('PG_DB')

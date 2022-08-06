@@ -6,5 +6,5 @@ services:
       POSTGRES_DB: "${PG_DB}"
       POSTGRES_USER: "${PG_USER}"
       POSTGRES_PASSWORD: "${PG_PASS}"
-    ports:
-      - "5433:5433"
+    # ports:
+    #   - "5433:5433"

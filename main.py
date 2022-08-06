@@ -1,7 +1,10 @@
 import handlers.inlineButton as button
-import handlers.Stats
 import re
 import os
+import sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from urllib.parse import urlparse
 from requests import get
@@ -9,30 +12,31 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram.contrib.middlewares.i18n import I18nMiddleware
+# from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from datetime import date, datetime
 from urlextract import URLExtract
 from handlers.logger import logger
 from handlers.sending_screen import make_screen
-from handlers.load_all import db, bot, dp
+from handlers.load_all import bot, _i, dp
+from handlers.Stats import Stats
 
 
 # Bot parameters
-db = handlers.Stats.Stats()
-I18N_DOMAIN = 'imager_tg_bot'
+db = Stats()
+# I18N_DOMAIN = 'imager_tg_bot'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-LOCALES_DIR = f"{ROOT_DIR}/locales"
+# LOCALES_DIR = f"{ROOT_DIR}/locales"
 
 # Initialize bot and dispatcher
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
-# Setup i18n middleware
-i18n = I18nMiddleware(I18N_DOMAIN, LOCALES_DIR)
-dp.middleware.setup(i18n)
+# # Setup i18n middleware
+# i18n = I18nMiddleware(I18N_DOMAIN, LOCALES_DIR)
+# dp.middleware.setup(i18n)
 
-# Alias for gettext method
-_ = i18n.gettext
+# # Alias for gettext method
+# _ = i18n.gettext
 
 
 # States
@@ -47,7 +51,7 @@ async def set_default_commands():
     await bot.set_my_commands(
         [
             types.BotCommand('starts', 'Startings bot'),
-            types.BotCommand('start', _("Starting bot"))
+            types.BotCommand('start', _i("Starting bot"))
         ]
     )
 
@@ -101,7 +105,7 @@ async def send_screen(message: types.Message):
         full_url = re.findall('^http.*', url[0])
         logger.info('Finding request method to url')
     else:
-        await message.answer(_("Message must contain website URL"))
+        await message.answer(_i("Message must contain website URL"))
         logger.warning("Can't find URL in request")
         return
         
@@ -122,7 +126,7 @@ async def send_screen(message: types.Message):
     # Makes photo and add job for scheluder for edit_message handler
     if full_url:
         
-        message = await message.reply(_("🪄 Your request is being processed"))
+        message = await message.reply(_i("🪄 Your request is being processed"))
         logger.info('Sending dummy message')
         
         starting_capture_screen = datetime.now()
@@ -158,11 +162,11 @@ async def edit_message(message: types.Message,
     plural_name = ''
 
     if str(time_request)[-1] == '1':
-        plural_name = _("second")
+        plural_name = _i("second")
     if str(time_request)[-1] in ['2', '3', '4']:
-        plural_name = _("seconds")
+        plural_name = _i("seconds")
     if str(time_request)[-1] not in ['1', '2', '3', '4']:
-        plural_name = _("seconds")
+        plural_name = _i("seconds")
 
     # Getting user id
 
@@ -178,7 +182,7 @@ async def edit_message(message: types.Message,
             await message.delete()
             logger.info('Editing dummy message and sending answer with photo and captions')
             await message.answer_photo(forw_photo,
-                                       _('{page_title}\n\nProcessing time: \
+                                       _i('{page_title}\n\nProcessing time: \
                                         {time_request} \
                                         {plural_name}').format(page_title,
                                                                time_request,
