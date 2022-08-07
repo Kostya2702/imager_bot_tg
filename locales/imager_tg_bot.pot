@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ImagerTgBot VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-07-31 22:17+0300\n"
+"POT-Creation-Date: 2022-08-07 17:39+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,30 +18,50 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.9.1\n"
 
-#: main.py:93
+#: handlers/main.py:54
 msgid "Starting bot"
-msgstr ""
+msgstr "Запуск бота"
 
-#: main.py:123
+#: handlers/main.py:55
+msgid "Statistic"
+msgstr "Статистика"
+
+#: handlers/main.py:90
+msgid ""
+"Total users in database: {users}\n"
+"Used the bot today: {users_today}"
+msgstr ""
+"Всего пользователей в базе данных: {users}\n"
+"Сегодня воспользовалось ботом: {users_today}"
+
+#: handlers/main.py:119
 msgid "Message must contain website URL"
-msgstr ""
+msgstr "Сообщение должно содержать URL сайта"
 
-#: main.py:143
+#: handlers/main.py:140
 msgid "🪄 Your request is being processed"
-msgstr ""
+msgstr "🪄 Ваш запрос обрабатывается"
 
-#: main.py:174
+#: handlers/main.py:176
 msgid "second"
-msgstr ""
+msgstr "секунда"
 
-#: main.py:176 main.py:178
+#: handlers/main.py:178 handlers/main.py:180
 msgid "seconds"
-msgstr ""
+msgstr "секунды"
 
-#: main.py:187
+#: handlers/main.py:180
+msgid "seconds"
+msgstr "секунд"
+
+#: handlers/main.py:196
 msgid ""
 "{page_title}\n"
 "\n"
-"Processing time: {time_request} {plural_name}"
+"Processing time:                                         {time_request}"
+"                                         {plural_name}"
 msgstr ""
+"{page_title}\n"
+"\n"
+"Время запроса: {time_request} {plural_name}"
 
