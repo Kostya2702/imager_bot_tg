@@ -83,12 +83,22 @@ async def send_welcome(message: types.Message):
 @dp.message_handler(commands=['statistic'])
 async def get_stats(message: types.Message):
     count_users = await db.count_users()
-    await message.answer(count_users)
+    add_stats = await db.stats(count_users)
+    count_users_today = await db.get_stats()
+
+    await message.answer(_i("Total users in database: {users}\n" \
+                            "Used the bot today: {users_today}")
+                            .format(users = count_users,
+                                    users_today = count_users_today))
 
 
 # Photo creation, URL extraction and request time
 @dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_screen(message: types.Message):
+
+
+    print(message.location)
+    print(message.from_user.language_code)
 
     logger.info(f"Starting work with user: {message.from_user.first_name}")
 
