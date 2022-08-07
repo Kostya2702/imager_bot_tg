@@ -1,25 +1,20 @@
-import inlineButton as button
 import re
-import os
-import sys
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from urllib.parse import urlparse
 from requests import get
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import executor, types
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-# from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from datetime import date, datetime
 from urlextract import URLExtract
 from logger import logger
 from sending_screen import make_screen
 from load_all import bot, dp, ROOT_DIR
+from config import ADMIN
 from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from Stats import Stats
+from inlineButton import greet_kb
 
 
 # Bot parameters
@@ -56,14 +51,6 @@ async def set_default_commands():
     )
 
 
-# async def await_set(message: types.Message):
-
-#     await message.answer('This bot allow you to mage screenshot of any websites what you send him in the message')
-#     await Form.language.set()
-
-
-# Bot functionality description function
-
 @dp.message_handler(commands=['start'], content_types=['text'], state='*')
 async def send_welcome(message: types.Message):
 
@@ -82,14 +69,18 @@ async def send_welcome(message: types.Message):
 
 @dp.message_handler(commands=['statistic'])
 async def get_stats(message: types.Message):
+
     count_users = await db.count_users()
     await db.stats(count_users)
     count_users_today = await db.get_stats()
-
-    await message.answer(_("Total users in database: {users}\n"
-                           "Used the bot today: {users_today}")
-                            .format(users = count_users,
-                                    users_today = count_users_today))
+    
+    if message.from_user.id == int(ADMIN):
+        await message.answer(_("Total users in database: {users}\n"
+                            "Used the bot today: {users_today}")
+                                .format(users = count_users,
+                                        users_today = count_users_today))
+    else:
+        await message.answer(_("You must be an administrator"))
 
 
 # Photo creation, URL extraction and request time
@@ -185,18 +176,21 @@ async def edit_message(message: types.Message,
     # Sending edited text with all necessary parameters
     logger.info('Running the scheduler')
     try:
-        with open(f"{ROOT_DIR}/{date.today()}_\
-                    {user_id}_\
-                    {page_domain}.png", 'rb') as forw_photo:
+        with open(("{ROOT_DIR}/{date}_"\
+                    "{user_id}_"\
+                    "{page_domain}.png").format(ROOT_DIR=ROOT_DIR,
+                                                date=date.today(),
+                                                user_id=user_id,
+                                                page_domain=page_domain), 'rb') as forw_photo:
 
             await message.delete()
             logger.info('Editing dummy message and sending answer with photo and captions')
             await message.answer_photo(forw_photo,
-                                       _('{page_title}\n\nProcessing time: \
-                                        {time_request} \
-                                        {plural_name}').format(page_title,
-                                                               time_request,
-                                                               plural_name))
+                                       _("{page_title}\n\nProcessing time: "\
+                                        "{time_request} "\
+                                        "{plural_name}").format(page_title=page_title,
+                                                               time_request=time_request,
+                                                               plural_name=plural_name))
     except FileNotFoundError:
         logger.exception('FileNotFoundError')
 

@@ -3,3 +3,4 @@ debug_logs.log
 **/__pycache__/
 .vscode/
 venv/
+*.png
