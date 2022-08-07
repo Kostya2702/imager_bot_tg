@@ -8,8 +8,8 @@ class Stats:
 
     pool: Connection = db
 
-    ADD_USER = "INSERT INTO users(user_id, username, territory, language) \
-                VALUES ($1, $2, $3, $4) RETURNING id"
+    ADD_USER = "INSERT INTO users(user_id, username, territory, language) " \
+                "VALUES ($1, $2, $3, $4) RETURNING id"
     COUNT_USERS = "SELECT COUNT(*) FROM users"
 
     async def record_etries(self, user):
