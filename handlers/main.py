@@ -3,8 +3,6 @@ import re
 from urllib.parse import urlparse
 from requests import get
 from aiogram import executor, types
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.dispatcher import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import date, datetime
 from urlextract import URLExtract
@@ -34,13 +32,6 @@ dp.middleware.setup(i18n)
 _ = i18n.gettext
 
 
-# States
-class Form(StatesGroup):
-
-    # State for choose language
-    language = State()
-
-
 async def set_default_commands():
 
     await bot.set_my_commands(
@@ -51,19 +42,43 @@ async def set_default_commands():
     )
 
 
-@dp.message_handler(commands=['start'], content_types=['text'], state='*')
-async def send_welcome(message: types.Message):
+@dp.callback_query_handler(lambda c: c.data)
+async def process_callback_button(call):
+    user_id = call.from_user.id
+    language = call.data
+    await db.change_language(user_id=user_id, language=language)
 
-    # await Form.language.set()
+    print(call.message.chat.id)
+    
+    await bot.delete_message(call.message.chat.id, message_id=call.message.message_id)
+
+    scheduler.add_job(send_welcome, 
+                      "date",
+                      run_date=datetime.now(),
+                      kwargs={"message": call})
+
+
+@dp.message_handler(commands=['start'], content_types=['text'])
+async def send_welcome(message: types.Message):
 
     # Register user
     user = message.from_user
     await db.record_etries(user)
 
+    language = await db.get_lang(user.id)
+
+    greeting_file = ''
+
+    if language == 'ru':
+        greeting_file = 'greeting_ru.txt'
+    else:
+        greeting_file = 'greeting_en.txt'
+
     # Answer on message about bot
-    with open(f"{ROOT_DIR}/greetings.txt", 'r', encoding='UTF-8') as greeting:
-        await message.answer(greeting.read())
-        # await message.answer('f', reply_markup=button.greet_kb)
+    with open(f"{ROOT_DIR}/{greeting_file}", 'r', encoding='UTF-8') as greeting:
+        await bot.send_message(message.from_user.id, _("{greet}\nChoose language")
+                            .format(greet=greeting.read()),
+                            reply_markup=greet_kb)
         logger.info(f"Sending gretting for user {message.from_user.first_name}")
 
 
@@ -76,9 +91,9 @@ async def get_stats(message: types.Message):
     
     if message.from_user.id == int(ADMIN):
         await message.answer(_("Total users in database: {users}\n"
-                            "Used the bot today: {users_today}")
-                                .format(users = count_users,
-                                        users_today = count_users_today))
+                               "Used the bot today: {users_today}")
+                               .format(users = count_users,
+                                       users_today = count_users_today))
     else:
         await message.answer(_("You must be an administrator"))
 
@@ -87,15 +102,7 @@ async def get_stats(message: types.Message):
 @dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_screen(message: types.Message):
 
-
-    print(message.location)
-    print(message.from_user.language_code)
-
     logger.info(f"Starting work with user: {message.from_user.first_name}")
-
-    # await state.update_data(lang='ru')
-    # await Form.next()
-    # print(await state.get_data()['lang'])
 
     # Getting url from message
     extractorURL = URLExtract()
@@ -152,8 +159,6 @@ async def send_screen(message: types.Message):
                                   "time_request": time_request.seconds,
                                   "page_domain": page_domain})
 
-    
-                          
 
 async def edit_message(message: types.Message, 
                        page_title, 
@@ -178,19 +183,22 @@ async def edit_message(message: types.Message,
     try:
         with open(("{ROOT_DIR}/{date}_"\
                     "{user_id}_"\
-                    "{page_domain}.png").format(ROOT_DIR=ROOT_DIR,
-                                                date=date.today(),
-                                                user_id=user_id,
-                                                page_domain=page_domain), 'rb') as forw_photo:
+                    "{page_domain}.png")
+                    .format(ROOT_DIR=ROOT_DIR,
+                            date=date.today(),
+                            user_id=user_id,
+                            page_domain=page_domain), 'rb') as forw_photo:
 
             await message.delete()
-            logger.info('Editing dummy message and sending answer with photo and captions')
+            logger.info('Editing dummy message and sending answer with photo ' \
+                        'and captions')
             await message.answer_photo(forw_photo,
                                        _("{page_title}\n\nProcessing time: "\
                                         "{time_request} "\
-                                        "{plural_name}").format(page_title=page_title,
-                                                               time_request=time_request,
-                                                               plural_name=plural_name))
+                                        "{plural_name}")
+                                        .format(page_title=page_title,
+                                                time_request=time_request,
+                                                plural_name=plural_name))
     except FileNotFoundError:
         logger.exception('FileNotFoundError')
 

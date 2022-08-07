@@ -2,7 +2,6 @@ CREATE TABLE users
 (
     user_id bigint NOT NULL PRIMARY KEY,
     username CHARACTER varying(30) NOT NULL,
-    territory CHARACTER varying(30),
     language CHARACTER varying(10),
     id SERIAL NOT NULL
 );

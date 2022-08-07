@@ -1,0 +1,10 @@
+👋🏻 Hello! My name is Imager Telegram bot.
+I am a Web Screenshot Bot.
+To get a screenshot - send the URL of the site. For example, wikipedia.org
+
+• With the help of a bot, you can check suspicious links. (IP loggers, phishing websites, screamers, etc.)
+
+• You can also add me to your chats and I can check the links that users send.
+
+I am using chromedriver.
+I work with http, https protocols.
