@@ -1,4 +1,4 @@
-import handlers.inlineButton as button
+import inlineButton as button
 import re
 import os
 import sys
@@ -15,28 +15,28 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from datetime import date, datetime
 from urlextract import URLExtract
-from handlers.logger import logger
-from handlers.sending_screen import make_screen
-from handlers.load_all import bot, _i, dp
-from handlers.Stats import Stats
+from logger import logger
+from sending_screen import make_screen
+from load_all import bot, dp, ROOT_DIR
+from aiogram.contrib.middlewares.i18n import I18nMiddleware
+from Stats import Stats
 
 
 # Bot parameters
 db = Stats()
-# I18N_DOMAIN = 'imager_tg_bot'
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-# LOCALES_DIR = f"{ROOT_DIR}/locales"
+I18N_DOMAIN = 'imager_tg_bot'
+LOCALES_DIR = f"{ROOT_DIR}/locales"
 
 # Initialize bot and dispatcher
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
-# # Setup i18n middleware
-# i18n = I18nMiddleware(I18N_DOMAIN, LOCALES_DIR)
-# dp.middleware.setup(i18n)
+# Setup i18n middleware
+i18n = I18nMiddleware(I18N_DOMAIN, LOCALES_DIR)
+dp.middleware.setup(i18n)
 
-# # Alias for gettext method
-# _ = i18n.gettext
+# Alias for gettext method
+_ = i18n.gettext
 
 
 # States
@@ -50,8 +50,8 @@ async def set_default_commands():
 
     await bot.set_my_commands(
         [
-            types.BotCommand('starts', 'Startings bot'),
-            types.BotCommand('start', _i("Starting bot"))
+            types.BotCommand('start', _("Starting bot"),
+            types.BotCommand('statistic', _("Statistic")))
         ]
     )
 
@@ -83,11 +83,11 @@ async def send_welcome(message: types.Message):
 @dp.message_handler(commands=['statistic'])
 async def get_stats(message: types.Message):
     count_users = await db.count_users()
-    add_stats = await db.stats(count_users)
+    await db.stats(count_users)
     count_users_today = await db.get_stats()
 
-    await message.answer(_i("Total users in database: {users}\n" \
-                            "Used the bot today: {users_today}")
+    await message.answer(_("Total users in database: {users}\n"
+                           "Used the bot today: {users_today}")
                             .format(users = count_users,
                                     users_today = count_users_today))
 
@@ -115,7 +115,7 @@ async def send_screen(message: types.Message):
         full_url = re.findall('^http.*', url[0])
         logger.info('Finding request method to url')
     else:
-        await message.answer(_i("Message must contain website URL"))
+        await message.answer(_("Message must contain website URL"))
         logger.warning("Can't find URL in request")
         return
         
@@ -136,7 +136,7 @@ async def send_screen(message: types.Message):
     # Makes photo and add job for scheluder for edit_message handler
     if full_url:
         
-        message = await message.reply(_i("🪄 Your request is being processed"))
+        message = await message.reply(_("🪄 Your request is being processed"))
         logger.info('Sending dummy message')
         
         starting_capture_screen = datetime.now()
@@ -172,11 +172,11 @@ async def edit_message(message: types.Message,
     plural_name = ''
 
     if str(time_request)[-1] == '1':
-        plural_name = _i("second")
+        plural_name = _("second")
     if str(time_request)[-1] in ['2', '3', '4']:
-        plural_name = _i("seconds")
+        plural_name = _("seconds")
     if str(time_request)[-1] not in ['1', '2', '3', '4']:
-        plural_name = _i("seconds")
+        plural_name = _("seconds")
 
     # Getting user id
 
@@ -192,7 +192,7 @@ async def edit_message(message: types.Message,
             await message.delete()
             logger.info('Editing dummy message and sending answer with photo and captions')
             await message.answer_photo(forw_photo,
-                                       _i('{page_title}\n\nProcessing time: \
+                                       _('{page_title}\n\nProcessing time: \
                                         {time_request} \
                                         {plural_name}').format(page_title,
                                                                time_request,

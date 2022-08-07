@@ -1,7 +1,7 @@
 import pytest
 
 from unittest.mock import AsyncMock
-from main import send_welcome
+from handlers.main import send_welcome
 
 
 @pytest.mark.asyncio
