@@ -19,7 +19,9 @@ class Stats:
     UPDATE_STATS = "UPDATE daily_stats SET users_count=$1 " \
                 "where CAST(day AS DATE) = CURRENT_DATE"
     GET_STATS = "SELECT users_count FROM daily_stats " \
-                "WHERE CAST(day AS DATE) = CURRENT_DATE;"
+                "WHERE CAST(day AS DATE) = CURRENT_DATE"
+    GET_TODAY = "SELECT day FROM daily_stats " \
+                "WHERE CAST(day AS DATE) = CURRENT_DATE"
 
     async def record_etries(self, user):
         user_id = user.id
@@ -69,6 +71,11 @@ class Stats:
     async def get_stats(self):
         logger.info("Getting daily stats")
         return await self.pool.fetchval(self.GET_STATS)
+
+
+    async def get_today(self):
+        logger.info("Getting today")
+        return await self.pool.fetchval(self.GET_TODAY)
 
 
     async def get_lang(self, user_id):

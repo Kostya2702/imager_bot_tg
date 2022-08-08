@@ -1,3 +1,4 @@
+import asyncio
 import re
 
 from urllib.parse import urlparse
@@ -20,10 +21,6 @@ db = Stats()
 I18N_DOMAIN = 'imager_tg_bot'
 LOCALES_DIR = f"{ROOT_DIR}/locales"
 
-# Initialize bot and dispatcher
-scheduler = AsyncIOScheduler()
-scheduler.start()
-
 # Setup i18n middleware
 i18n = I18nMiddleware(I18N_DOMAIN, LOCALES_DIR)
 dp.middleware.setup(i18n)
@@ -31,6 +28,9 @@ dp.middleware.setup(i18n)
 # Alias for gettext method
 _ = i18n.gettext
 
+# Initialize bot and dispatcher
+scheduler = AsyncIOScheduler()
+scheduler.start()
 
 async def set_default_commands():
 
@@ -47,10 +47,9 @@ async def process_callback_button(call):
     user_id = call.from_user.id
     language = call.data
     await db.change_language(user_id=user_id, language=language)
-
-    print(call.message.chat.id)
     
-    await bot.delete_message(call.message.chat.id, message_id=call.message.message_id)
+    await bot.delete_message(call.message.chat.id, 
+                             message_id=call.message.message_id)
 
     scheduler.add_job(send_welcome, 
                       "date",
@@ -76,9 +75,10 @@ async def send_welcome(message: types.Message):
 
     # Answer on message about bot
     with open(f"{ROOT_DIR}/{greeting_file}", 'r', encoding='UTF-8') as greeting:
-        await bot.send_message(message.from_user.id, _("{greet}\nChoose language")
-                            .format(greet=greeting.read()),
-                            reply_markup=greet_kb)
+        await bot.send_message(message.from_user.id, 
+                               _("{greet}\nChoose language")
+                                .format(greet=greeting.read()),
+                                reply_markup=greet_kb)
         logger.info(f"Sending gretting for user {message.from_user.first_name}")
 
 
@@ -86,7 +86,6 @@ async def send_welcome(message: types.Message):
 async def get_stats(message: types.Message):
 
     count_users = await db.count_users()
-    await db.stats(count_users)
     count_users_today = await db.get_stats()
     
     if message.from_user.id == int(ADMIN):
@@ -116,6 +115,9 @@ async def send_screen(message: types.Message):
         await message.answer(_("Message must contain website URL"))
         logger.warning("Can't find URL in request")
         return
+
+    # Adding the amount of work with the bot
+    await db.stats(await db.get_stats() + 1)
         
     # Transfromation url to https request
     if len(full_url) == 0:
@@ -141,6 +143,11 @@ async def send_screen(message: types.Message):
         logger.info('Starting a screenshot')
         
         try:
+            # async def main():
+                # task = loop.create_task(make_screen(full_url[0],
+                                    # date.today(),
+                                    # message.from_user.id, page_domain))
+                # await asyncio.wait(task)
             await make_screen(full_url[0],
                             date.today(),
                             message.from_user.id, page_domain)
@@ -182,12 +189,12 @@ async def edit_message(message: types.Message,
     logger.info('Running the scheduler')
     try:
         with open(("{ROOT_DIR}/{date}_"\
-                    "{user_id}_"\
-                    "{page_domain}.png")
-                    .format(ROOT_DIR=ROOT_DIR,
-                            date=date.today(),
-                            user_id=user_id,
-                            page_domain=page_domain), 'rb') as forw_photo:
+                        "{user_id}_"\
+                        "{page_domain}.png")
+                        .format(ROOT_DIR=ROOT_DIR,
+                                date=date.today(),
+                                user_id=user_id,
+                                page_domain=page_domain), 'rb') as forw_photo:
 
             await message.delete()
             logger.info('Editing dummy message and sending answer with photo ' \
