@@ -143,14 +143,10 @@ async def send_screen(message: types.Message):
         logger.info('Starting a screenshot')
         
         try:
-            # async def main():
-                # task = loop.create_task(make_screen(full_url[0],
-                                    # date.today(),
-                                    # message.from_user.id, page_domain))
-                # await asyncio.wait(task)
             await make_screen(full_url[0],
-                            date.today(),
-                            message.from_user.id, page_domain)
+                              date.today(),
+                              message.from_user.id,
+                              page_domain)
         except Exception:
             logger.exception('Exception occurred')
 
@@ -189,8 +185,8 @@ async def edit_message(message: types.Message,
     logger.info('Running the scheduler')
     try:
         with open(("{ROOT_DIR}/{date}_"\
-                        "{user_id}_"\
-                        "{page_domain}.png")
+                    "{user_id}_"\
+                    "{page_domain}.png")
                         .format(ROOT_DIR=ROOT_DIR,
                                 date=date.today(),
                                 user_id=user_id,

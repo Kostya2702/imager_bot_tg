@@ -1,28 +1,25 @@
+import io
 from logger import logger
-from selenium import webdriver
+from arsenic import services, browsers
+from arsenic import get_session
+import PIL.Image as Image
 
 
 async def make_screen(url, date_request, user_id, domen):
 
     # Initialize Chrome webrdiver
-    options = webdriver.ChromeOptions()
-    options.add_argument('--no-sandbox')
-    options.add_argument('--headless')
-    options.add_argument('--disable-dev-shm-usage')
-    driver = webdriver.Chrome(options=options)
+    service = services.Chromedriver()
+    browser = browsers.Chrome()
+    browser.capabilities = {
+        "goog:chromeOptions": {"args": ["--headless", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"]}
+    }
 
-    try:
-        driver.get(url)
-    except Exception:
-        if __name__ == '__main__':
-            logger.exception('InvalidArgumentException')
+    async with get_session(service, browser) as session:
+        await session.get(url)
+        await session.set_window_size(1024, 1460)
+        screen = await session.get_screenshot()
 
-    # Setting up display size
-    driver.set_window_size(1024, 1460)
-    driver.maximize_window()
+    img = Image.open(io.BytesIO(screen.read()))
+    img.save(f"{date_request}_{user_id}_{domen}.png")
 
-    # Makes screenshot
-    driver.get_screenshot_as_file(f"{date_request}_{user_id}_{domen}.png")
-
-    # Ending driver work
-    driver.quit()
+    screen.seek(0)
