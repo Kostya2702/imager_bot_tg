@@ -35,8 +35,9 @@ sudo usermod -aG docker ${USER}
 
 Restart the virtual machine or log out on Linux/Mac/Windows and log in again.
 
-## Create container
+## Create containers
 
 ```
 docker build -t imager . && docker run --restart unless-stopped --cpus 2 -d imager
+docker-compose up
 ```

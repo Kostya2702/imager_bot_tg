@@ -1,4 +1,3 @@
-import asyncio
 import re
 
 from urllib.parse import urlparse
@@ -36,8 +35,8 @@ async def set_default_commands():
 
     await bot.set_my_commands(
         [
-            types.BotCommand('start', _("Starting bot"),
-            types.BotCommand('statistic', _("Statistic")))
+            types.BotCommand('start', "Starting bot",
+            types.BotCommand('statistic', "Statistic"))
         ]
     )
 
@@ -46,7 +45,11 @@ async def set_default_commands():
 async def process_callback_button(call):
     user_id = call.from_user.id
     language = call.data
-    await db.change_language(user_id=user_id, language=language)
+    
+    i18n.ctx_locale.set(language)
+
+    await db.change_language(user_id=user_id, 
+                             language=language)
     
     await bot.delete_message(call.message.chat.id, 
                              message_id=call.message.message_id)
@@ -65,6 +68,7 @@ async def send_welcome(message: types.Message):
     await db.record_etries(user)
 
     language = await db.get_lang(user.id)
+    i18n.ctx_locale.set(language)
 
     greeting_file = ''
 
@@ -87,6 +91,9 @@ async def get_stats(message: types.Message):
 
     count_users = await db.count_users()
     count_users_today = await db.get_stats()
+
+    language = await db.get_lang(message.from_user.id)
+    i18n.ctx_locale.set(language)
     
     if message.from_user.id == int(ADMIN):
         await message.answer(_("Total users in database: {users}\n"
@@ -102,6 +109,8 @@ async def get_stats(message: types.Message):
 async def send_screen(message: types.Message):
 
     logger.info(f"Starting work with user: {message.from_user.first_name}")
+
+    i18n.ctx_locale.set(await db.get_lang(message.from_user.id))
 
     # Getting url from message
     extractorURL = URLExtract()
@@ -169,6 +178,9 @@ async def edit_message(message: types.Message,
                        page_domain):
 
     plural_name = ''
+
+    language = await db.get_lang(message.from_user.id)
+    i18n.ctx_locale.set(language)
 
     if str(time_request)[-1] == '1':
         plural_name = _("second")
