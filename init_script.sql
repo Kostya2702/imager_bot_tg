@@ -1,3 +1,3 @@
 CREATE USER postgres;
-CREATE DATABASE imager_bot;
+CREATE DATABASE postgres;
 GRANT ALL PRIVILEGES ON DATABASE imager_bot TO postgres;

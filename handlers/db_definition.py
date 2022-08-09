@@ -1,4 +1,5 @@
 import asyncio
+import time
 import asyncpg
 
 from asyncpg.exceptions import DuplicateTableError
@@ -12,7 +13,8 @@ async def create_db():
     logger.info('Connection to db')
     conn: asyncpg.Connection = await asyncpg.connect(host=PG_HOST, 
                                                user=PG_USER, 
-                                               password=PG_PASS)
+                                               password=PG_PASS,
+                                               port=5432)
 
     logger.info('Execute create table')
     try:
@@ -26,9 +28,16 @@ async def create_db():
 
 
 async def create_pool():
-    return await asyncpg.create_pool(host=PG_HOST, 
-                                     user=PG_USER, 
-                                     password=PG_PASS)
+    while True:
+        try:
+            return await asyncpg.create_pool(host=PG_HOST, 
+                                        user=PG_USER, 
+                                        password=PG_PASS,
+                                        port=5432)
+        except ConnectionRefusedError:
+            logger.exception('Database connection refused, retrying in 5 seconds ...')
+            time.sleep(5)
+                                    
 
 
 if __name__ == '__main__':

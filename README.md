@@ -33,7 +33,7 @@ python3 main.py
 
 ## Added user to usergroup
 
-In the imager folder run.
+In the imager folder run command below for run docker without sudo.
 
 ```
 sudo usermod -aG docker ${USER}
@@ -44,6 +44,5 @@ Restart the virtual machine or log out on Linux/Mac/Windows and log in again.
 ## Create containers
 
 ```
-docker build -t imager . && docker run --restart unless-stopped --cpus 2 -d imager
 docker-compose up
 ```

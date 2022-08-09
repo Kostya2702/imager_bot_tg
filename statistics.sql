@@ -16,7 +16,7 @@ CREATE TABLE daily_stats
 (
     id SERIAL NOT NULL,
     day DATE NOT NULL PRIMARY KEY,
-    users_count INTEGER
+    users_count INTEGER DEFAULT 0 NOT NULL
 );
 
 ALTER TABLE daily_stats
