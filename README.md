@@ -9,6 +9,17 @@ If you've Git installed, clone this repo as shown below, otherwise download as Z
 git clone https://github.com/Kostya2702/imager_bot_tg.git imager
 cd imager
 ```
+
+## Prerequisite
+
+Create .env file with your environments variables:
+
+- TOKEN - bot token
+- ADMIN_ID - your user id in Telegram
+- PG_USER - database owner
+- PG_PASS - user database password
+- PG_HOST - database host (localhost/host docker container)
+
 ## Setup
 
 In the imager folder run
