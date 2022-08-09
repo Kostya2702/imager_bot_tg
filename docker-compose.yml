@@ -18,10 +18,8 @@ services:
     container_name: imager
     build: 
       context: .
-    command: bash -c "
-        python handlers/db_definition.py
-        && python handlers/main.py
-      "
+    command: bash -c "python handlers/db_definition.py && python handlers/main.py"
+      
     restart: always
     image: imager
     networks:
@@ -31,11 +29,10 @@ services:
     volumes:
       - .:/src
     environment:
-      # - ".env"
       DB_HOST: db
       DB_PORT: 5433
-      DB_USER: postgres
-      DB_PASSWORD: 123
+      DB_USER: "${PG_USER}"
+      DB_PASSWORD: "${PG_PASS}"
 volumes:
   db:
     driver: local

@@ -13,8 +13,7 @@ async def create_db():
     logger.info('Connection to db')
     conn: asyncpg.Connection = await asyncpg.connect(host=PG_HOST, 
                                                user=PG_USER, 
-                                               password=PG_PASS,
-                                               port=5432)
+                                               password=PG_PASS)
 
     logger.info('Execute create table')
     try:
@@ -32,8 +31,7 @@ async def create_pool():
         try:
             return await asyncpg.create_pool(host=PG_HOST, 
                                         user=PG_USER, 
-                                        password=PG_PASS,
-                                        port=5432)
+                                        password=PG_PASS)
         except ConnectionRefusedError:
             logger.exception('Database connection refused, retrying in 5 seconds ...')
             time.sleep(5)
