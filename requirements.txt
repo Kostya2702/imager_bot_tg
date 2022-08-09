@@ -5,3 +5,4 @@ python-dotenv==0.20.0
 requests>=2.22.0
 selenium==4.3.0
 urlextract==1.6.0
+arsenic
