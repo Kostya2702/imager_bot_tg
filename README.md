@@ -17,6 +17,12 @@ In the imager folder run
 pip install -r requirements.txt
 ```
 
+Initialize table in database if not already created
+
+```
+python3 db_definition.py
+```
+
 ## Run
 
 ```
